@@ -6,36 +6,56 @@ struct Post<'a> {
 }
 
 #[derive(Debug)]
-struct YearMonth(i16, i8);
-
-#[derive(Debug)]
-struct Budget<'a> {
-    posts: Vec<Post<'a>>,
-    date: &'a YearMonth,
-}
-
-#[derive(Debug)]
 struct Movement<'a> {
     amount: f32,
     payee: &'a str,
     timestamp: &'a str,
-    budget_id: &'a str,
+    post_id: &'a str,
 }
 
 #[derive(Debug)]
-struct State<'a> {
-    budgets: Vec<Budget<'a>>,
-    movements: Vec<Budget<'a>>,
+struct Budget<'a> {
+    posts: Vec<&'a Post<'a>>,
+    movements: Vec<&'a Movement<'a>>,
+}
+
+impl Budget<'_> {
+    fn money_left_in_post(self, post_id: &str) -> f32 {
+        let deductions = self
+            .movements
+            .into_iter()
+            .filter(|movement| movement.post_id == post_id)
+            .fold(0.0f32, |accum, movement| accum + movement.amount);
+
+        return self
+            .posts
+            .into_iter()
+            .find(|post| post.id == post_id)
+            .unwrap()
+            .allocated
+            - deductions;
+    }
 }
 
 fn main() {
-    let test_data: State = State {
-        budgets: vec![Budget {
-            posts: vec![],
-            date: &YearMonth(2022, 10),
-        }],
-        movements: vec![],
+    let test_post = Post {
+        id: "groceries",
+        name: "Groceries 🍌",
+        allocated: 3000.0,
+    };
+
+    let test_movement = Movement {
+        amount: 236.90,
+        payee: "REMA 1000",
+        timestamp: "2022-10-31T16:35:40",
+        post_id: &test_post.id,
+    };
+
+    let test_data: Budget = Budget {
+        movements: vec![&test_movement],
+        posts: vec![&test_post],
     };
 
     println!("{:?}", test_data);
+    println!("{:?}", test_data.money_left_in_post(&test_post.id));
 }
